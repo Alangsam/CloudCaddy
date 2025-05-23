@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # === Load configuration ===
-ENV_FILE="./cf-ddns.env"
+ENV_FILE="/opt/cloudflare-ddns/cf-ddns.env"
+
 if [ ! -f "$ENV_FILE" ]; then
   echo "Missing config file: $ENV_FILE"
   exit 1
