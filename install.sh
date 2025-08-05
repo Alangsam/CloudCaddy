@@ -65,38 +65,30 @@ else
   read -rp "Enter your Record Name (e.g., home.example.com): " RECORD_NAME
 fi
 
-# === Step 3: Write .env file ===
-echo "[3/6] Creating .env configuration..."
+
+# === Step 3: Write JSON file ===
+echo "[3/6] Creating JSON configuration..."
 if $MULTI; then
-  ENV_CONTENT="CF_API_TOKEN=\"$CF_API_TOKEN\"\n"
-  ENV_CONTENT+="ZONES=("
-  for z in "${ZONES[@]}"; do ENV_CONTENT+="\"$z\" "; done
-  ENV_CONTENT+=")\nRECORDS=("
-  for r in "${RECORDS[@]}"; do ENV_CONTENT+="\"$r\" "; done
-  ENV_CONTENT+=")\n"
+  zones_json=$(printf '%s\n' "${ZONES[@]}" | jq -R . | jq -s .)
+  records_json=$(printf '%s\n' "${RECORDS[@]}" | jq -R . | jq -s .)
+  CONFIG_JSON=$(jq -n --arg token "$CF_API_TOKEN" \
+    --argjson zones "$zones_json" --argjson records "$records_json" \
+    --arg wildcard "$STAR" '{cf_api_token:$token,zones:$zones,records:$records,wildcard:($wildcard=="true")}')
 else
-  ENV_CONTENT=$(cat <<EOF
-CF_API_TOKEN="$CF_API_TOKEN"
-ZONE_NAME="$ZONE_NAME"
-RECORD_NAME="$RECORD_NAME"
-EOF
-)
+  CONFIG_JSON=$(jq -n --arg token "$CF_API_TOKEN" --arg zone "$ZONE_NAME" \
+    --arg record "$RECORD_NAME" --arg wildcard "$STAR" \
+    '{cf_api_token:$token,zone:$zone,record:$record,wildcard:($wildcard=="true")}')
+
 fi
 
-if $STAR; then
-  ENV_CONTENT+="WILDCARD=1\n"
-else
-  ENV_CONTENT+="WILDCARD=0\n"
-fi
-
-# === Step 4: Deploy script and env file ===
+# === Step 4: Deploy script and config file ===
 echo "[4/6] Deploying to /opt/cloudflare-ddns..."
 sudo mkdir -p /opt/cloudflare-ddns
-echo "$ENV_CONTENT" | sudo tee /opt/cloudflare-ddns/cf-ddns.env >/dev/null
+echo "$CONFIG_JSON" | sudo tee /opt/cloudflare-ddns/cf-ddns.json >/dev/null
 sudo cp ddns.sh /opt/cloudflare-ddns/ddns.sh
 sudo chmod 700 /opt/cloudflare-ddns
 sudo chmod 700 /opt/cloudflare-ddns/ddns.sh
-sudo chmod 600 /opt/cloudflare-ddns/cf-ddns.env
+sudo chmod 600 /opt/cloudflare-ddns/cf-ddns.json
 
 # === Step 5: Create systemd service and timer ===
 

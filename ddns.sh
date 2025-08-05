@@ -4,14 +4,16 @@ show_help() {
   cat <<'USAGE'
 CloudCaddy Dynamic DNS updater
 
+
 Usage: $0 [-help]
 
-Reads configuration from /opt/cloudflare-ddns/cf-ddns.env and updates Cloudflare
-A records to match the machine's current public IP. Configuration can specify a
-single zone/record pair via ZONE_NAME and RECORD_NAME or multiple pairs using
-arrays ZONES and RECORDS of equal length. When WILDCARD=1 is set in the
+Reads configuration from /opt/cloudflare-ddns/cf-ddns.json and updates Cloudflare
+A records to match the machine's current public IP. Configuration may specify a
+single zone/record pair via "zone" and "record" fields or multiple pairs using
+arrays "zones" and "records" of equal length. When "wildcard" is true in the
 configuration, a wildcard CNAME ("*.zone") pointing to the zone is ensured for
 each zone.
+
 
 Options:
   -help    Display this message and exit
@@ -21,34 +23,41 @@ USAGE
 if [[ "$1" == "-help" ]]; then
   show_help
   exit 0
+
 fi
 
-ENV_FILE="/opt/cloudflare-ddns/cf-ddns.env"
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "Missing config file: $ENV_FILE"
+CONFIG_FILE="/opt/cloudflare-ddns/cf-ddns.json"
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  echo "Missing config file: $CONFIG_FILE"
   exit 1
 fi
-# shellcheck disable=SC1090
-source "$ENV_FILE"
 
-# Support legacy single record config
-if [[ -n "${ZONES[*]}" && -n "${RECORDS[*]}" ]]; then
-  if [[ ${#ZONES[@]} -ne ${#RECORDS[@]} ]]; then
-    echo "ZONES and RECORDS arrays must have the same length"
+CF_API_TOKEN=$(jq -r '.cf_api_token // empty' "$CONFIG_FILE")
+if [[ -z "$CF_API_TOKEN" ]]; then
+  echo "cf_api_token missing from config"
+  exit 1
+fi
+
+if jq -e '.zones and .records' "$CONFIG_FILE" >/dev/null; then
+  mapfile -t zones < <(jq -r '.zones[]' "$CONFIG_FILE")
+  mapfile -t records < <(jq -r '.records[]' "$CONFIG_FILE")
+  if [[ ${#zones[@]} -ne ${#records[@]} ]]; then
+    echo "zones and records arrays must be the same length"
     exit 1
   fi
-  zones=("${ZONES[@]}")
-  records=("${RECORDS[@]}")
 else
+  ZONE_NAME=$(jq -r '.zone // empty' "$CONFIG_FILE")
+  RECORD_NAME=$(jq -r '.record // empty' "$CONFIG_FILE")
   if [[ -z "$ZONE_NAME" || -z "$RECORD_NAME" ]]; then
-    echo "One or more required environment variables are missing."
+    echo "zone/record missing in config"
     exit 1
   fi
   zones=("$ZONE_NAME")
   records=("$RECORD_NAME")
 fi
 
-WILDCARD=${WILDCARD:-0}
+WILDCARD=$(jq -r '.wildcard // false' "$CONFIG_FILE")
+
 
 ensure_wildcard() {
   local zone=$1
@@ -91,7 +100,7 @@ for i in "${!zones[@]}"; do
     continue
   fi
 
-  if [[ "$WILDCARD" == "1" ]]; then
+  if [[ "$WILDCARD" == "true" ]]; then
     ensure_wildcard "$ZONE_NAME" "$ZONE_ID"
   fi
 
