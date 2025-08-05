@@ -4,7 +4,6 @@ show_help() {
   cat <<'USAGE'
 CloudCaddy Dynamic DNS updater
 
-
 Usage: $0 [-help]
 
 Reads configuration from /opt/cloudflare-ddns/cf-ddns.json and updates Cloudflare
@@ -13,7 +12,6 @@ single zone/record pair via "zone" and "record" fields or multiple pairs using
 arrays "zones" and "records" of equal length. When "wildcard" is true in the
 configuration, a wildcard CNAME ("*.zone") pointing to the zone is ensured for
 each zone.
-
 
 Options:
   -help    Display this message and exit

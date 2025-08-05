@@ -78,7 +78,6 @@ else
   CONFIG_JSON=$(jq -n --arg token "$CF_API_TOKEN" --arg zone "$ZONE_NAME" \
     --arg record "$RECORD_NAME" --arg wildcard "$STAR" \
     '{cf_api_token:$token,zone:$zone,record:$record,wildcard:($wildcard=="true")}')
-
 fi
 
 # === Step 4: Deploy script and config file ===
