@@ -4,6 +4,7 @@ show_help() {
   cat <<'USAGE'
 CloudCaddy Dynamic DNS updater
 
+
 Usage: $0 [-help]
 
 Reads configuration from /opt/cloudflare-ddns/cf-ddns.json and updates Cloudflare
@@ -13,6 +14,7 @@ arrays "zones" and "records" of equal length. When "wildcard" is true in the
 configuration, a wildcard CNAME ("*.zone") pointing to the zone is ensured for
 each zone.
 
+
 Options:
   -help    Display this message and exit
 USAGE
@@ -21,6 +23,7 @@ USAGE
 if [[ "$1" == "-help" ]]; then
   show_help
   exit 0
+
 fi
 
 CONFIG_FILE="/opt/cloudflare-ddns/cf-ddns.json"
@@ -54,6 +57,7 @@ else
 fi
 
 WILDCARD=$(jq -r '.wildcard // false' "$CONFIG_FILE")
+
 
 ensure_wildcard() {
   local zone=$1
