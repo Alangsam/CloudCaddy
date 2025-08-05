@@ -21,6 +21,7 @@ USAGE
 if [[ "$1" == "-help" ]]; then
   show_help
   exit 0
+
 fi
 
 CONFIG_FILE="/opt/cloudflare-ddns/cf-ddns.json"
@@ -54,6 +55,7 @@ else
 fi
 
 WILDCARD=$(jq -r '.wildcard // false' "$CONFIG_FILE")
+
 
 ensure_wildcard() {
   local zone=$1

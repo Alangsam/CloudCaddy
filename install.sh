@@ -65,6 +65,7 @@ else
   read -rp "Enter your Record Name (e.g., home.example.com): " RECORD_NAME
 fi
 
+
 # === Step 3: Write JSON file ===
 echo "[3/6] Creating JSON configuration..."
 if $MULTI; then
